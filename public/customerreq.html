@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Requirement Tracker</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;        
+        /* --- Generic Modal Styling --- */
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        
+        /* --- Retail Tracker Specific --- */
+        .rt-status-pending { background-color: #FEF3C7; color: #92400E; }
+        .rt-status-in-progress { background-color: #DBEAFE; color: #1E40AF; }
+        .rt-status-ordered { background-color: #E9D5FF; color: #5B21B6; }
+        .rt-status-procured { background-color: #A7F3D0; color: #047857; }
+        .rt-status-contacted-customer { background-color: #FDE68A; color: #B45309; }
+        .rt-status-completed { background-color: #D1FAE5; color: #065F46; }
+        input[type="file"] { display: none; }
+        .rt-file-upload-label {
+            cursor: pointer; display: inline-block; padding: 0.75rem 1.5rem;
+            background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db;
+            border-radius: 0.5rem; font-weight: 600; transition: background-color 0.3s;
+        }
+        .rt-file-upload-label:hover { background-color: #e5e7eb; }
+        .rt-dashboard-card {
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .rt-dashboard-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .rt-dashboard-card.active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            border: 2px solid #3b82f6;
+        }
+        /* Retail nav tabs */
+        .nav-tab { cursor: pointer; padding: 0.5rem 1rem; border-bottom: 2px solid transparent; transition: all 0.3s; }
+        .nav-tab.active { border-bottom-color: #2563EB; color: #2563EB; font-weight: 600; }
+        
+        /* Delete button styling */
+        .delete-x-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        .delete-x-btn:hover {
+            background-color: #dc2626;
+            transform: scale(1.1);
+        }
+        .requirement-card {
+            position: relative;
+        }
+        .requirement-card:hover .delete-x-btn {
+            opacity: 1;
+        }
+        
+        /* Success Toast Notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease-in-out;
+            font-weight: 500;
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+        .toast.error {
+            background-color: #ef4444;
+        }
+        
+        /* Edit button styling */
+        .edit-btn {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+        .edit-btn:hover {
+            background-color: #2563eb;
+        }
+        
+        /* Filter functionality */
+        .filter-active {
+            border: 2px solid #3b82f6;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .filter-btn {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .filter-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .filter-btn.active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: scale(1.02);
+        }
+        
+        .clear-filter-btn {
+            background-color: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .clear-filter-btn:hover {
+            background-color: #e5e7eb;
+        }
+        
+        /* Image upload and preview */
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .image-preview {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .image-preview img:hover {
+            transform: scale(1.05);
+        }
+        
+        .image-remove-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 20px;
+            height: 20px;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .image-preview:hover .image-remove-btn {
+            opacity: 1;
+        }
+        
+        .requirement-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .requirement-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #d1d5db;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .requirement-image:hover {
+            transform: scale(1.1);
+        }
+        
+        .requirement-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* Image preview modal */
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .image-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .image-modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+        }
+        
+        .image-modal img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        .image-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-modal-close:hover {
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+        
+        /* Video upload and preview */
+        .video-preview {
+            position: relative;
+            width: 120px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e5e7eb;
+            background-color: #f3f4f6;
+        }
+        
+        .video-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        
+        .video-play-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            pointer-events: none;
+        }
+        
+        .requirement-video {
+            width: 80px;
+            height: 60px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #d1d5db;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+            background-color: #f3f4f6;
+        }
+        
+        .requirement-video:hover {
+            transform: scale(1.1);
+        }
+        
+        .requirement-video video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .video-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .video-modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+        }
+        
+        .video-modal video {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+        }
+        
+        /* Timestamps */
+        .timestamp {
+            font-size: 11px;
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        .requirement-timestamp {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+        
+        /* Comments section */
+        .comments-section {
+            margin-top: 16px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 16px;
+        }
+        
+        .comment-item {
+            background-color: #f9fafb;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .comment-text {
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        
+        .comment-timestamp {
+            font-size: 11px;
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        .comment-input-section {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .comment-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            resize: none;
+        }
+        
+        .comment-submit-btn {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .comment-submit-btn:hover {
+            background-color: #2563eb;
+        }
+        
+        /* Comment media upload */
+        .comment-media-btn {
+            background-color: #6b7280;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .comment-media-btn:hover {
+            background-color: #4b5563;
+        }
+        
+        .comment-media-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .comment-media-item {
+            position: relative;
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #d1d5db;
+        }
+        
+        .comment-media-item img,
+        .comment-media-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        
+        .comment-media-item .video-play-overlay {
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+        }
+        
+        .comment-media-item .image-remove-btn {
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            top: 1px;
+            right: 1px;
+        }
+        
+        .comment-media-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        
+        .comment-media-display .comment-media-item {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .media-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .media-tab {
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            background-color: #f9fafb;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .media-tab.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <header class="bg-white shadow-md sticky top-0 z-30">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-3">
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-800">
+                    <i class="fas fa-shopping-cart text-blue-600"></i>
+                    Customer Requirement Tracker
+                </h1>
+            </div>
+            <p id="main-user-id-display" class="text-right text-xs text-gray-400 pb-1"></p>
+        </div>
+    </header>
+    
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div id="retail-tracker-app">
+            <header class="mb-8 text-center">
+                <h1 class="text-3xl font-bold text-gray-800">🛍️&nbsp;Customer Requirement Tracker</h1>
+                <p class="text-gray-500 mt-1">A simple tool to manage customer requests for your retail store.</p>
+            </header>
+            
+            <div class="border-b border-gray-200 mb-8">
+                <nav class="flex space-x-4">
+                    <button id="rt-nav-current" class="nav-tab active">Current Requirements</button>
+                    <button id="rt-nav-completed" class="nav-tab">Completed</button>
+                </nav>
+            </div>
+    
+            <div id="rt-current-page-content">
+                <div class="mb-8">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Dashboard</h2>
+                    <div id="rt-dashboard-stats" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                    </div>
+                </div>
+    
+                <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Add New Requirement</h2>
+                    <form id="rt-requirement-form" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="rt-customer-name" class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                                <input type="text" id="rt-customer-name" placeholder="Enter customer's name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required>
+                            </div>
+                            <div>
+                                <label for="rt-customer-contact" class="block text-sm font-medium text-gray-700 mb-1">Customer Contact</label>
+                                <input type="tel" id="rt-customer-contact" placeholder="Enter contact number" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            </div>
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <div class="flex-grow">
+                                <label for="rt-requirement-type" class="block text-sm font-medium text-gray-700 mb-1">Requirement Type</label>
+                                <select id="rt-requirement-type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required>
+                                    <option value="">Loading types...</option>
+                                </select>
+                            </div>
+                            <button type="button" id="rt-manage-types-btn" class="px-4 py-3 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">
+                                Manage
+                            </button>
+                        </div>
+                        <div>
+                            <label for="rt-requirement-details" class="block text-sm font-medium text-gray-700 mb-1">Requirement Details</label>
+                            <textarea id="rt-requirement-details" placeholder="e.g., Special order for item #123" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required rows="3"></textarea>
+                        </div>
+                        <div>
+                            <label for="rt-follow-up" class="block text-sm font-medium text-gray-700 mb-1">Initial Follow-up Notes</label>
+                            <textarea id="rt-follow-up" placeholder="e.g., Promised to call back by Tuesday" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" rows="2"></textarea>
+                        </div>
+                        <div>
+                            <label for="rt-media-file" class="rt-file-upload-label">
+                                📷🎥&nbsp;Add Photos & Videos
+                            </label>
+                            <input type="file" id="rt-media-file" name="rt-media-file" accept="image/*,video/*" multiple>
+                            <span id="rt-media-file-name" class="ml-3 text-gray-500"></span>
+                            <div id="rt-media-preview-container" class="image-preview-container"></div>
+                        </div>
+                        <button type="submit" id="rt-submit-btn" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-sm">Add Requirement</button>
+                    </form>
+                </div>
+                
+                <!-- Filter Options are now the dashboard cards -->
+            </div>
+    
+            <div>
+                <h2 id="rt-list-title" class="text-xl font-semibold text-gray-700 mb-4"></h2>
+                <div id="rt-requirements-list" class="space-y-4">
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Add Type Modal -->
+    <div id="rt-add-type-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Manage Requirement Types</h3>
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold mb-2">Add New Type</h4>
+                    <div class="flex gap-2">
+                        <input type="text" id="rt-new-type-name" placeholder="Enter new type name" class="flex-grow p-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+                        <button id="rt-save-new-type-btn" class="bg-blue-600 text-white font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-700 transition">Save</button>
+                    </div>
+                </div>
+                <div class="mt-4">
+                     <h4 class="font-semibold mb-2">Existing Types</h4>
+                     <div id="rt-existing-types-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+                </div>
+                <div class="items-center px-4 py-3 mt-4 text-right">
+                    <button id="rt-cancel-new-type-btn" type="button" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-300 focus:outline-none">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Requirement Modal -->
+    <div id="rt-edit-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Edit Requirement</h3>
+                <form id="rt-edit-form" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <input type="text" id="rt-edit-customer-name" placeholder="Customer Name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required>
+                        <input type="tel" id="rt-edit-customer-contact" placeholder="Customer Contact Number" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <div>
+                        <select id="rt-edit-requirement-type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required>
+                            <option value="">Select Requirement Type...</option>
+                        </select>
+                    </div>
+                    <textarea id="rt-edit-requirement-details" placeholder="Requirement Details" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required rows="3"></textarea>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" id="rt-cancel-edit-btn" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-300 focus:outline-none">Cancel</button>
+                        <button type="submit" id="rt-save-edit-btn" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- Image Preview Modal -->
+    <div id="image-modal" class="image-modal">
+        <div class="image-modal-content">
+            <button class="image-modal-close" id="image-modal-close">&times;</button>
+            <img id="image-modal-img" src="" alt="Preview">
+        </div>
+    </div>
+
+    <!-- Video Preview Modal -->
+    <div id="video-modal" class="video-modal">
+        <div class="video-modal-content">
+            <button class="image-modal-close" id="video-modal-close">&times;</button>
+            <video id="video-modal-video" controls>
+                <source src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const RetailTracker = {
+                    // --- Constants & State ---
+                    API_BASE_URL: '/api',
+                    ALL_STATUSES: ['Pending', 'In Progress', 'Ordered', 'Procured', 'Contacted Customer', 'Completed'],
+                    currentPage: 'current',
+                    activeFilter: 'all',
+                    requirementsCache: [],
+                    typesCache: [],
+                    selectedMedia: [],
+                    commentMedia: {}, // Store media files per requirement { reqId: [files] }
+
+                    // --- DOM Element Cache ---
+                    elements: {
+                        // App Body
+                        app: document.getElementById('retail-tracker-app'),
+                        mainUserIdDisplay: document.getElementById('main-user-id-display'),
+                        // Navigation
+                        navCurrent: document.getElementById('rt-nav-current'),
+                        navCompleted: document.getElementById('rt-nav-completed'),
+                        // Current Page Content
+                        currentPageContent: document.getElementById('rt-current-page-content'),
+                        // Dashboard
+                        dashboardStats: document.getElementById('rt-dashboard-stats'),
+                        // Main Form
+                        form: document.getElementById('rt-requirement-form'),
+                        customerNameInput: document.getElementById('rt-customer-name'),
+                        customerContactInput: document.getElementById('rt-customer-contact'),
+                        requirementTypeSelect: document.getElementById('rt-requirement-type'),
+                        requirementDetailsInput: document.getElementById('rt-requirement-details'),
+                        followUpInput: document.getElementById('rt-follow-up'),
+                        mediaFileInput: document.getElementById('rt-media-file'),
+                        mediaPreviewContainer: document.getElementById('rt-media-preview-container'),
+                        mediaFileNameSpan: document.getElementById('rt-media-file-name'),
+                        submitBtn: document.getElementById('rt-submit-btn'),
+                        // Lists
+                        listTitle: document.getElementById('rt-list-title'),
+                        requirementsList: document.getElementById('rt-requirements-list'),
+                        // Type Management Modal
+                        typeModal: document.getElementById('rt-add-type-modal'),
+                        manageTypesBtn: document.getElementById('rt-manage-types-btn'),
+                        cancelTypeBtn: document.getElementById('rt-cancel-new-type-btn'),
+                        saveTypeBtn: document.getElementById('rt-save-new-type-btn'),
+                        newTypeNameInput: document.getElementById('rt-new-type-name'),
+                        existingTypesList: document.getElementById('rt-existing-types-list'),
+                        // Edit Requirement Modal
+                        editModal: document.getElementById('rt-edit-modal'),
+                        editForm: document.getElementById('rt-edit-form'),
+                        editCustomerName: document.getElementById('rt-edit-customer-name'),
+                        editCustomerContact: document.getElementById('rt-edit-customer-contact'),
+                        editRequirementType: document.getElementById('rt-edit-requirement-type'),
+                        editRequirementDetails: document.getElementById('rt-edit-requirement-details'),
+                        cancelEditBtn: document.getElementById('rt-cancel-edit-btn'),
+                        // Media Modals
+                        imageModal: document.getElementById('image-modal'),
+                        imageModalImg: document.getElementById('image-modal-img'),
+                        imageModalClose: document.getElementById('image-modal-close'),
+                        videoModal: document.getElementById('video-modal'),
+                        videoModalVideo: document.getElementById('video-modal-video'),
+                        videoModalClose: document.getElementById('video-modal-close'),
+                        // Toast
+                        toast: document.getElementById('toast'),
+                    },
+
+                    // --- Initialization ---
+                    init() {
+                        this.elements.mainUserIdDisplay.textContent = 'Initializing...';
+                        this.setupEventListeners();
+                        this.setCurrentPage('current');
+                        this.fetchInitialData();
+                    },
+
+                    async fetchInitialData() {
+                        this.showToast('🔄 Loading initial data...', false);
+                        try {
+                            await Promise.all([
+                                this.fetchTypes(),
+                                this.fetchRequirements()
+                            ]);
+                            this.elements.mainUserIdDisplay.textContent = 'Ready';
+                        } catch (error) {
+                            console.error("Error fetching initial data:", error);
+                            this.elements.mainUserIdDisplay.textContent = 'Error';
+                            this.showToast('❌ Failed to load initial data.', true);
+                        }
+                    },
+
+                    // --- Event Listeners ---
+                    setupEventListeners() {
+                        // Navigation
+                        this.elements.navCurrent.addEventListener('click', () => this.setCurrentPage('current'));
+                        this.elements.navCompleted.addEventListener('click', () => this.setCurrentPage('completed'));
+                        
+                        // Main Form
+                        this.elements.form.addEventListener('submit', (e) => this.addRequirement(e));
+                        this.elements.mediaFileInput.addEventListener('change', (e) => this.handleMediaSelection(e.target.files));
+
+                        // Type Management
+                        this.elements.manageTypesBtn.addEventListener('click', () => this.openTypeModal());
+                        this.elements.cancelTypeBtn.addEventListener('click', () => this.closeTypeModal());
+                        this.elements.saveTypeBtn.addEventListener('click', () => this.saveNewType());
+                        this.elements.newTypeNameInput.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') this.saveNewType();
+                        });
+
+                        // Edit Modal
+                        this.elements.editForm.addEventListener('submit', (e) => this.handleEditSubmit(e));
+                        this.elements.cancelEditBtn.addEventListener('click', () => this.closeEditModal());
+
+                        // Media Modals
+                        this.elements.imageModalClose.addEventListener('click', () => this.closeImageModal());
+                        this.elements.videoModalClose.addEventListener('click', () => this.closeVideoModal());
+                        this.elements.imageModal.addEventListener('click', (e) => { if(e.target === this.elements.imageModal) this.closeImageModal() });
+                        this.elements.videoModal.addEventListener('click', (e) => { if(e.target === this.elements.videoModal) this.closeVideoModal() });
+                    },
+
+                    // --- API Calls ---
+                    async fetchRequirements() {
+                        const response = await fetch(`${this.API_BASE_URL}/requirements`);
+                        if (!response.ok) throw new Error('Failed to fetch requirements');
+                        this.requirementsCache = await response.json();
+                        this.renderRequirements();
+                        this.updateDashboard();
+                    },
+
+                    async fetchTypes() {
+                        const response = await fetch(`${this.API_BASE_URL}/types`);
+                        if (!response.ok) throw new Error('Failed to fetch types');
+                        this.typesCache = await response.json();
+                        this.updateTypeSelects();
+                        this.renderTypesList();
+                    },
+
+                    async addRequirement(event) {
+                        event.preventDefault();
+                        if (!this.elements.form.checkValidity()) {
+                            this.showToast('❌ Please fill all required fields.', true);
+                            return;
+                        }
+                        this.elements.submitBtn.textContent = 'Saving...';
+                        this.elements.submitBtn.disabled = true;
+
+                        const formData = new FormData();
+                        formData.append('customer', this.elements.customerNameInput.value);
+                        formData.append('contact', this.elements.customerContactInput.value);
+                        formData.append('type', this.elements.requirementTypeSelect.value);
+                        formData.append('details', this.elements.requirementDetailsInput.value);
+                        formData.append('followUp', this.elements.followUpInput.value);
+                        this.selectedMedia.forEach(file => formData.append('media', file));
+
+                        try {
+                            const response = await fetch(`${this.API_BASE_URL}/requirements`, { method: 'POST', body: formData });
+                            if (!response.ok) {
+                                const err = await response.json();
+                                throw new Error(err.error || 'Server error');
+                            }
+                            this.showToast('✅ Requirement added successfully!');
+                            this.elements.form.reset();
+                            this.selectedMedia = [];
+                            this.updateMediaPreviews();
+                            await this.fetchRequirements();
+                        } catch (error) {
+                            this.showToast(`❌ Error: ${error.message}`, true);
+                        } finally {
+                            this.elements.submitBtn.textContent = 'Add Requirement';
+                            this.elements.submitBtn.disabled = false;
+                        }
+                    },
+
+                    async updateStatus(id, newStatus) {
+                        try {
+                            const response = await fetch(`${this.API_BASE_URL}/requirements/${id}/status`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status: newStatus })
+                            });
+                            if (!response.ok) throw new Error('Failed to update status');
+                            this.showToast('✅ Status updated!');
+                            await this.fetchRequirements();
+                        } catch (error) {
+                            this.showToast(`❌ ${error.message}`, true);
+                        }
+                    },
+
+                    async deleteRequirement(id) {
+                        if (!confirm('Are you sure you want to delete this requirement? This cannot be undone.')) return;
+                        try {
+                            const response = await fetch(`${this.API_BASE_URL}/requirements/${id}`, { method: 'DELETE' });
+                            if (!response.ok) throw new Error('Failed to delete');
+                            this.showToast('✅ Requirement deleted.');
+                            await this.fetchRequirements();
+                        } catch (error) {
+                            this.showToast(`❌ ${error.message}`, true);
+                        }
+                    },
+                    
+                    async saveRequirementEdit(id) {
+                        const updatedData = {
+                            customer: this.elements.editCustomerName.value,
+                            contact: this.elements.editCustomerContact.value,
+                            type: this.elements.editRequirementType.value,
+                            details: this.elements.editRequirementDetails.value,
+                        };
+
+                        try {
+                            const response = await fetch(`${this.API_BASE_URL}/requirements/${id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(updatedData)
+                            });
+                            if (!response.ok) throw new Error('Failed to save changes');
+                            
+                            this.showToast('✅ Requirement updated successfully!');
+                            this.closeEditModal();
+                            await this.fetchRequirements();
+                        } catch (error) {
+                            this.showToast(`❌ ${error.message}`, true);
+                        }
+                    },
+
+                    async addComment(reqId, text, mediaFiles) {
+                        if (!text.trim() && mediaFiles.length === 0) {
+                            this.showToast('❌ Comment cannot be empty.', true);
+                            return;
+                        }
+
+                        const formData = new FormData();
+                        formData.append('text', text);
+                        mediaFiles.forEach(file => formData.append('media', file));
+
+                        try {
+                            const response = await fetch(`${this.API_BASE_URL}/requirements/${reqId}/comments`, { method: 'POST', body: formData });
+                            if (!response.ok) throw new Error('Failed to add comment');
+                            
+                            this.showToast('✅ Comment added!');
+                            await this.fetchRequirements();
+                        } catch (error) {
+                            this.showToast(`❌ ${error.message}`, true);
+                        }
+                    },
+
+                    async saveNewType() {
+                        const name = this.elements.newTypeNameInput.value.trim();
+                        if (!name) {
+                            this.showToast('❌ Type name cannot be empty.', true);
+                            return;
+                        }
+                        try {
+                            const response = await fetch(`${this.API_BASE_URL}/types`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name })
+                            });
+                            if (!response.ok) throw new Error('Failed to add type');
+                            this.showToast('✅ Type added!');
+                            this.elements.newTypeNameInput.value = '';
+                            await this.fetchTypes();
+                        } catch (error) {
+                            this.showToast(`❌ ${error.message}`, true);
+                        }
+                    },
+
+                    async deleteType(id) {
+                        if (!confirm('Are you sure you want to delete this type?')) return;
+                        try {
+                            const response = await fetch(`${this.API_BASE_URL}/types/${id}`, { method: 'DELETE' });
+                            if (!response.ok) throw new Error('Failed to delete type');
+                            this.showToast('✅ Type deleted.');
+                            await this.fetchTypes();
+                        } catch (error) {
+                            this.showToast(`❌ ${error.message}`, true);
+                        }
+                    },
+
+                    // --- DOM Rendering & Updates ---
+                    updateDashboard() {
+                        const stats = this.ALL_STATUSES.reduce((acc, status) => {
+                            acc[status] = 0;
+                            return acc;
+                        }, {});
+                        
+                        this.requirementsCache.forEach(req => {
+                            if (stats[req.status] !== undefined) {
+                                stats[req.status]++;
+                            }
+                        });
+
+                        this.elements.dashboardStats.innerHTML = '';
+                        
+                        const createCard = (status, count, isAll = false) => {
+                            const statusIdentifier = isAll ? 'all' : status;
+                            const card = document.createElement('div');
+                            card.className = `rt-dashboard-card p-4 rounded-lg shadow bg-white ${this.activeFilter === statusIdentifier ? 'active' : ''}`;
+                            card.dataset.filter = statusIdentifier;
+                            card.innerHTML = `
+                                <h3 class="font-bold text-lg">${isAll ? 'All Active' : status}</h3>
+                                <p class="text-2xl font-semibold text-blue-600">${count}</p>
+                            `;
+                            card.addEventListener('click', () => this.setFilter(card.dataset.filter));
+                            this.elements.dashboardStats.appendChild(card);
+                        };
+                        
+                        const totalActive = this.requirementsCache.filter(r => r.status !== 'Completed').length;
+                        createCard('All', totalActive, true);
+
+                        this.ALL_STATUSES.filter(s => s !== 'Completed').forEach(status => {
+                            createCard(status, stats[status]);
+                        });
+                    },
+
+                    renderRequirements() {
+                        let filteredReqs = this.requirementsCache.filter(req => {
+                            const isCompleted = req.status === 'Completed';
+                            return this.currentPage === 'completed' ? isCompleted : !isCompleted;
+                        });
+
+                        if (this.currentPage === 'current' && this.activeFilter !== 'all') {
+                            filteredReqs = filteredReqs.filter(req => req.status === this.activeFilter);
+                        }
+
+                        this.elements.requirementsList.innerHTML = '';
+                        if (filteredReqs.length === 0) {
+                            this.elements.requirementsList.innerHTML = `<div class="text-center py-12 text-gray-500 bg-white rounded-lg shadow"><p>No requirements found for this view.</p></div>`;
+                            return;
+                        }
+                        filteredReqs.forEach(req => {
+                            const reqCard = this.createRequirementCard(req);
+                            this.elements.requirementsList.appendChild(reqCard);
+                        });
+                    },
+
+                    createRequirementCard(req) {
+                        const div = document.createElement('div');
+                        div.className = 'requirement-card bg-white p-4 sm:p-6 rounded-lg shadow-md border-l-4 border-blue-500 relative';
+                        const statusClass = `rt-status-${req.status.toLowerCase().replace(/ /g, '-')}`;
+                        const timestamp = new Date(req.created_at).toLocaleString();
+
+                        const createMediaGallery = (media, type) => {
+                            if (!media || media.length === 0) return '';
+                            return `<div class="requirement-images">${media.map(url => {
+                                const src = `/${url}`; // Ensure correct path
+                                if (type === 'image') {
+                                    return `<div class="requirement-image" data-src="${src}"><img src="${src}" alt="Requirement image"></div>`;
+                                }
+                                if (type === 'video') {
+                                    return `<div class="requirement-video" data-src="${src}"><video muted><source src="${src}"></video><div class="video-play-overlay">▶</div></div>`;
+                                }
+                                return '';
+                            }).join('')}</div>`;
+                        };
+
+                        div.innerHTML = `
+                            <button class="delete-x-btn" title="Delete requirement">×</button>
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">${req.customer}</h3>
+                                    <p class="text-sm text-gray-600">${req.contact || 'No contact info'}</p>
+                                    <span class="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full ${statusClass}">${req.status}</span>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-semibold text-gray-600">${req.type}</p>
+                                    <p class="timestamp mt-1">${timestamp}</p>
+                                </div>
+                            </div>
+                            <div class="mb-4 space-y-3">
+                                <p class="text-gray-700">${(req.details || '').replace(/\n/g, '<br>')}</p>
+                                ${createMediaGallery(req.images, 'image')}
+                                ${createMediaGallery(req.videos, 'video')}
+                            </div>
+                            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                                <select class="status-select w-full sm:w-auto px-3 py-1 text-sm border border-gray-300 rounded-md">
+                                    ${this.ALL_STATUSES.map(s => `<option value="${s}" ${req.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                </select>
+                                <button class="edit-btn w-full sm:w-auto" title="Edit requirement">Edit Details</button>
+                            </div>
+                            <div class="comments-section">
+                                <h4 class="text-sm font-semibold text-gray-600 mb-2">Comments (${req.comments.length})</h4>
+                                <div class="comments-list space-y-3">${req.comments.map(c => this.createCommentView(c)).join('') || '<p class="text-xs text-gray-400">No comments yet.</p>'}</div>
+                                <div class="add-comment-form mt-3">
+                                    <textarea class="comment-input w-full p-2 border rounded-md" placeholder="Add a comment..."></textarea>
+                                    <div class="flex justify-between items-center mt-2">
+                                        <label class="comment-media-btn text-xs"><span>📎 Attach</span><input type="file" class="hidden" multiple accept="image/*,video/*"></label>
+                                        <button class="comment-submit-btn text-sm">Add Comment</button>
+                                    </div>
+                                    <div class="comment-media-preview text-xs text-gray-500 mt-1"></div>
+                                </div>
+                            </div>
+                        `;
+
+                        // Add event listeners to the created card
+                        div.querySelector('.status-select').addEventListener('change', (e) => this.updateStatus(req.id, e.target.value));
+                        div.querySelector('.delete-x-btn').addEventListener('click', () => this.deleteRequirement(req.id));
+                        div.querySelector('.edit-btn').addEventListener('click', () => this.openEditModal(req));
+                        
+                        // Comment functionality
+                        const commentForm = div.querySelector('.add-comment-form');
+                        const commentSubmitBtn = commentForm.querySelector('.comment-submit-btn');
+                        const commentMediaInput = commentForm.querySelector('input[type="file"]');
+                        
+                        commentMediaInput.addEventListener('change', (e) => {
+                            this.commentMedia[req.id] = Array.from(e.target.files);
+                            const previewContainer = commentForm.querySelector('.comment-media-preview');
+                            previewContainer.textContent = `${this.commentMedia[req.id].length} file(s) selected.`;
+                        });
+
+                        commentSubmitBtn.addEventListener('click', () => {
+                            const commentText = commentForm.querySelector('.comment-input').value;
+                            const mediaFiles = this.commentMedia[req.id] || [];
+                            this.addComment(req.id, commentText, mediaFiles).then(() => {
+                                delete this.commentMedia[req.id]; // Clear after submit
+                            });
+                        });
+
+                        // Media preview modals
+                        div.querySelectorAll('.requirement-image, .comment-media-item[data-type="image"]').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); this.showImageModal(el.dataset.src); }));
+                        div.querySelectorAll('.requirement-video, .comment-media-item[data-type="video"]').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); this.showVideoModal(el.dataset.src); }));
+
+                        return div;
+                    },
+
+                    createCommentView(comment) {
+                        const timestamp = new Date(comment.created_at).toLocaleString();
+                        const createMediaGallery = (media, type) => {
+                            if (!media || media.length === 0) return '';
+                            return media.map(url => {
+                                const src = `/${url}`; // Ensure correct path
+                                if (type === 'image') return `<div class="comment-media-item" data-type="image" data-src="${src}"><img src="${src}" alt="Comment image"></div>`;
+                                if (type === 'video') return `<div class="comment-media-item" data-type="video" data-src="${src}"><video muted><source src="${src}"></video><div class="video-play-overlay">▶</div></div>`;
+                                return '';
+                            }).join('');
+                        };
+                        return `
+                            <div class="comment-item">
+                                <p class="comment-text">${(comment.text || '').replace(/\n/g, '<br>')}</p>
+                                <div class="comment-media-display">${createMediaGallery(comment.images, 'image')}${createMediaGallery(comment.videos, 'video')}</div>
+                                <p class="comment-timestamp">${timestamp}</p>
+                            </div>
+                        `;
+                    },
+
+                    updateTypeSelects() {
+                        const optionsHtml = this.typesCache.length > 0
+                            ? this.typesCache.map(type => `<option value="${type.name}">${type.name}</option>`).join('')
+                            : '<option value="" disabled>No types available. Please add one.</option>';
+                        
+                        this.elements.requirementTypeSelect.innerHTML = `<option value="">Select Requirement Type...</option>${optionsHtml}`;
+                        this.elements.editRequirementType.innerHTML = `<option value="">Select Requirement Type...</option>${optionsHtml}`;
+                    },
+
+                    renderTypesList() {
+                        this.elements.existingTypesList.innerHTML = this.typesCache.map(type => `
+                            <div class="flex justify-between items-center p-2 bg-gray-100 rounded-md">
+                                <span>${type.name}</span>
+                                <button data-id="${type.id}" class="delete-type-btn text-red-500 hover:text-red-700 font-bold">&times;</button>
+                            </div>
+                        `).join('');
+                        this.elements.existingTypesList.querySelectorAll('.delete-type-btn').forEach(btn => {
+                            btn.addEventListener('click', (e) => this.deleteType(e.target.dataset.id));
+                        });
+                    },
+
+                    // --- UI Logic & Event Handlers ---
+                    setCurrentPage(page) {
+                        this.currentPage = page;
+                        this.elements.navCurrent.classList.toggle('active', page === 'current');
+                        this.elements.navCompleted.classList.toggle('active', page === 'completed');
+                        
+                        this.elements.currentPageContent.style.display = page === 'current' ? 'block' : 'none';
+                        this.elements.listTitle.textContent = page === 'current' ? 'Current Requirements' : 'Completed Requirements';
+                        
+                        if (page === 'completed') this.activeFilter = 'all'; // Reset filter on completed page
+                        
+                        this.renderRequirements();
+                        this.updateDashboard();
+                    },
+
+                    setFilter(filterType) {
+                        if (this.currentPage !== 'current') return;
+                        this.activeFilter = filterType;
+                        this.updateDashboard(); // Re-renders dashboard to show active state
+                        this.renderRequirements();
+                    },
+
+                    handleMediaSelection(files) {
+                        this.selectedMedia = [...this.selectedMedia, ...Array.from(files)];
+                        this.updateMediaPreviews();
+                        this.elements.mediaFileInput.value = ''; // Reset file input
+                    },
+
+                    updateMediaPreviews() {
+                        this.elements.mediaPreviewContainer.innerHTML = '';
+                        this.selectedMedia.forEach((file, index) => {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                const isVideo = file.type.startsWith('video/');
+                                const previewDiv = document.createElement('div');
+                                previewDiv.className = isVideo ? 'video-preview' : 'image-preview';
+                                previewDiv.innerHTML = `
+                                    ${isVideo ? `<video muted src="${e.target.result}"></video><div class="video-play-overlay">▶</div>` : `<img src="${e.target.result}" alt="Preview">`}
+                                    <button class="image-remove-btn" data-index="${index}">&times;</button>
+                                `;
+                                this.elements.mediaPreviewContainer.appendChild(previewDiv);
+                                previewDiv.querySelector('.image-remove-btn').addEventListener('click', (event) => {
+                                    event.stopPropagation();
+                                    this.removeMedia(index);
+                                });
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                        this.elements.mediaFileNameSpan.textContent = this.selectedMedia.length > 0 ? `${this.selectedMedia.length} file(s) selected` : '';
+                    },
+                    
+                    removeMedia(index) {
+                        this.selectedMedia.splice(index, 1);
+                        this.updateMediaPreviews();
+                    },
+
+                    handleEditSubmit(event) {
+                        event.preventDefault();
+                        const id = this.elements.editModal.dataset.editingId;
+                        this.saveRequirementEdit(id);
+                    },
+
+                    // --- Modal Management ---
+                    openTypeModal() { this.elements.typeModal.classList.remove('hidden'); },
+                    closeTypeModal() { this.elements.typeModal.classList.add('hidden'); },
+                    openEditModal(req) {
+                        this.elements.editModal.dataset.editingId = req.id;
+                        this.elements.editCustomerName.value = req.customer;
+                        this.elements.editCustomerContact.value = req.contact;
+                        this.elements.editRequirementDetails.value = req.details;
+                        this.elements.editRequirementType.value = req.type;
+                        this.elements.editModal.classList.remove('hidden');
+                    },
+                    closeEditModal() { this.elements.editModal.classList.add('hidden'); },
+                    showImageModal(src) {
+                        this.elements.imageModalImg.src = src;
+                        this.elements.imageModal.classList.add('show');
+                    },
+                    closeImageModal() { this.elements.imageModal.classList.remove('show'); },
+                    showVideoModal(src) {
+                        this.elements.videoModalVideo.src = src;
+                        this.elements.videoModal.classList.add('show');
+                    },
+                    closeVideoModal() {
+                        this.elements.videoModal.classList.remove('show');
+                        this.elements.videoModalVideo.pause();
+                        this.elements.videoModalVideo.src = "";
+                    },
+
+                    // --- Utilities ---
+                    showToast(message, isError = false) {
+                        this.elements.toast.textContent = message;
+                        this.elements.toast.className = `toast ${isError ? 'error' : ''} show`;
+                        setTimeout(() => {
+                            this.elements.toast.classList.remove('show');
+                        }, 3000);
+                    }
+                } // <-- Add missing closing brace for RetailTracker object
+
+                RetailTracker.init();
+            } catch (e) {
+                console.error('A critical error occurred in the RetailTracker script:', e);
+                document.body.innerHTML = '<div style="padding: 2rem; text-align: center; font-family: sans-serif;"><h1>An unexpected error occurred</h1><p>Please check the console for details and try refreshing the page.</p></div>';
+            }
+        });
+    </script>
+</body>
+</html>

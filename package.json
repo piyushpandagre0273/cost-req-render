@@ -1,0 +1,12 @@
+{
+  "name": "customer-req-tracker",
+  "version": "1.0.0",
+  "description": "A simple customer requirement tracker",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
