@@ -715,8 +715,8 @@
                     activeFilter: 'all',
                     requirementsCache: [],
                     typesCache: [],
-                    selectedMedia: [],
-                    commentMedia: {}, // Store media files per requirement { reqId: [files] }
+                    selectedMedia: [], // Files selected for new requirement
+                    commentMedia: {}, // Files selected for comments { reqId: [files] }
 
                     // --- DOM Element Cache ---
                     elements: {
@@ -865,7 +865,7 @@
                             this.showToast('✅ Requirement added successfully!');
                             this.elements.form.reset();
                             this.selectedMedia = [];
-                            this.updateMediaPreviews();
+                            this.updateMediaPreviews(); // Clear previews
                             await this.fetchRequirements();
                         } catch (error) {
                             this.showToast(`❌ Error: ${error.message}`, true);
@@ -1046,7 +1046,7 @@
                         const createMediaGallery = (media, type) => {
                             if (!media || media.length === 0) return '';
                             return `<div class="requirement-images">${media.map(url => {
-                                const src = `/${url}`; // Ensure correct path
+                                const src = `${url}`; // Cloudinary URLs are absolute
                                 if (type === 'image') {
                                     return `<div class="requirement-image" data-src="${src}"><img src="${src}" alt="Requirement image"></div>`;
                                 }
@@ -1131,7 +1131,7 @@
                         const createMediaGallery = (media, type) => {
                             if (!media || media.length === 0) return '';
                             return media.map(url => {
-                                const src = `/${url}`; // Ensure correct path
+                                const src = `${url}`; // Cloudinary URLs are absolute
                                 if (type === 'image') return `<div class="comment-media-item" data-type="image" data-src="${src}"><img src="${src}" alt="Comment image"></div>`;
                                 if (type === 'video') return `<div class="comment-media-item" data-type="video" data-src="${src}"><video muted><source src="${src}"></video><div class="video-play-overlay">▶</div></div>`;
                                 return '';
